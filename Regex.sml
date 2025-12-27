@@ -8,10 +8,10 @@ struct
 
   fun scan getc strm =
     let
-      exception ParseFail of string
+      exception Scan of string
       fun atom strm =
         case getc strm of
-          NONE => raise ParseFail "Unexpected end of input"
+          NONE => raise Scan "Unexpected end of input"
         | SOME (#"(", strm) =>
           let val (exp, strm) = expr strm
           in
@@ -19,9 +19,9 @@ struct
               SOME (#")", strm) => (exp, strm)
             | _ => raise Fail "Missing closing parenthesis"
           end
-        | SOME (#"|", strm) => raise ParseFail "Unexpected character: |"
-        | SOME (#"*", strm) => raise ParseFail "Unexpected character: *"
-        | SOME (#")", strm) => raise ParseFail "Unexpected character: )"
+        | SOME (#"|", strm) => raise Scan "Unexpected character: |"
+        | SOME (#"*", strm) => raise Scan "Unexpected character: *"
+        | SOME (#")", strm) => raise Scan "Unexpected character: )"
         | SOME (c, strm) => (Literal c, strm)
 
       and star strm =
@@ -62,7 +62,7 @@ struct
         end
     in
       SOME (expr strm)
-      handle ParseFail _ => NONE
+      handle Scan _ => NONE
     end
 
   fun prec (Literal _) = 4
