@@ -28,7 +28,7 @@ struct
         in (start, start + 1)
         end
       
-      fun loop (start, accept) re =
+      fun loop re =
         case re of
           Re.Literal c =>
           let val (start, accept) = fresh ()
