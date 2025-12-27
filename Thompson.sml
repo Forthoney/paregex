@@ -11,64 +11,69 @@ struct
 
   structure Re = Regex
 
-  fun numStates Re.Epsilon = 2
-    | numStates (Re.Literal _) = 2
-    | numStates (Re.Concat (l, r)) = numStates l + numStates r
-    | numStates (Re.Alt (l, r)) = numStates l + numStates r + 2
-    | numStates (Re.Star r) = numStates r + 2
+  fun numStates re =
+    let
+      fun loop (re, acc) =
+        case re of
+          Re.Literal _ => acc
+        | Re.Star r => loop (r, acc + 2)
+        | Re.Alt (l, r) => loop (r, loop (l, acc + 4))
+        | Re.Concat rs => 
+          case Vector.length rs of
+            0 => acc
+          | 1 => loop (Vector.sub (rs, 0), acc)
+          | n => Vector.foldl loop (acc + n + 1) rs
+    in
+      loop (re, 2)
+    end
 
   fun compile re =
     let
-      val stateId = ref 0
+      val stateId = ref 2
       val bogus = Epsilon 0
-      val trans = Array.array (numStates re, bogus) 
+      val n = numStates re
+      val _ = print (Int.toString n ^ " states\n")
+      val trans = Array.array (n, bogus)
 
-      fun fresh () =
-        let val start = fetchAndAdd stateId 2
-        in (start, start + 1)
-        end
-      
-      fun loop re =
+      fun loop (start, accept) re =
         case re of
-          Re.Literal c =>
-          let val (start, accept) = fresh ()
-          in
-            (Array.update (trans, start, Literal (c, accept)); (start, accept))
-          end
-        | Re.Epsilon =>
-          let val (start, accept) = fresh ()
-          in
-            (Array.update (trans, start, Epsilon accept); (start, accept))
-          end
+          Re.Literal c => Array.update (trans, start, Literal (c, accept))
         | Re.Alt (l, r) =>
           let
-            val ((lStart, lAccept), (rStart, rAccept)) = ForkJoin.par (fn () => loop l, fn () => loop r)
-            val (start, accept) = fresh ()
+            val lStart = fetchAndAdd stateId 4
+            val (lAccept, rStart, rAccept) = (lStart + 1, lStart + 2, lStart + 3)
           in
-            ( Array.update (trans, start, Split (lStart, rStart))
+            ( ForkJoin.par (fn () => loop (lStart, lAccept) l, fn () => loop (rStart, rAccept) r)
+            ; Array.update (trans, start, Split (lStart, rStart))
             ; Array.update (trans, lAccept, Epsilon accept)
             ; Array.update (trans, rAccept, Epsilon accept)
-            ; (start, accept)
             )
-          end
-        | Re.Concat (l, r) =>
-          let
-            val ((lStart, lAccept), (rStart, rAccept)) = ForkJoin.par (fn () => loop l, fn () => loop r)
-          in
-            (Array.update (trans, lAccept, Epsilon rStart); (lStart, rAccept))
           end
         | Re.Star r =>
           let
-            val (rStart, rAccept) = loop r
-            val (start, accept) = fresh ()
+            val rStart = fetchAndAdd stateId 2
+            val rAccept = rStart + 1
           in
             ( Array.update (trans, rAccept, Split (rStart, accept))
             ; Array.update (trans, start, Split (rStart, accept))
-            ; (start, accept)
             )
           end
+        | Re.Concat rs =>
+          case Vector.length rs of
+            0 => Array.update (trans, start, Epsilon accept)
+          | 1 => loop (start, accept) (Vector.sub (rs, 0))
+          | n =>
+            let
+              val innerStart = fetchAndAdd stateId (n + 1)
+              val innerAccept = innerStart + n
+            in
+              ( ForkJoin.parform (0, n) (fn i => loop (i + innerStart, i + innerStart + 1) (Vector.sub (rs, i)))
+              ; Array.update (trans, start, Epsilon innerStart)
+              ; Array.update (trans, innerAccept, Epsilon accept)
+              )
+            end
     in
-      loop re
+      loop (0, 1) re
     end
 end
 

@@ -1,9 +1,8 @@
 structure Regex =
 struct
   datatype 'a t =
-    Epsilon
-  | Literal of 'a
-  | Concat of 'a t * 'a t
+    Literal of 'a
+  | Concat of ('a t) vector
   | Alt of 'a t * 'a t
   | Star of 'a t
 
@@ -42,14 +41,11 @@ struct
             | SOME (#")", _) => (acc, strm)
             | SOME _ =>
               let val (str, strm) = star strm
-              in loop (Concat (acc, str)) strm
+              in loop (str :: acc) strm
               end
 
-          val (seq, strm) = loop Epsilon strm
-          val seq = 
-            case seq of
-              Concat (regex, Epsilon) => regex
-            | _ => seq
+          val (seq, strm) = loop [] strm
+          val seq = (Concat o Vector.fromList o rev) seq
         in
           (seq, strm)
         end
@@ -69,8 +65,7 @@ struct
       handle ParseFail _ => NONE
     end
 
-  fun prec Epsilon = 4
-    | prec (Literal _) = 4
+  fun prec (Literal _) = 4
     | prec (Star _) = 3
     | prec (Concat _) = 2
     | prec (Alt _) = 1
@@ -82,16 +77,14 @@ struct
           val currPrec = prec r
           val s =
             case r of
-              Epsilon => "" 
-            | Literal c => String.str c
-            | Star inner => 
-                (help inner currPrec) ^ "*"
-            | Concat (r1, r2) => 
-                (help r1 currPrec) ^ (help r2 currPrec)
-            | Alt (r1, r2) => 
-                (help r1 currPrec) ^ "|" ^ (help r2 currPrec)
+              Literal c => String.str c
+            | Star inner => (help inner currPrec) ^ "*"
+            | Concat rs =>
+              Vector.foldl (fn (r, acc) => acc ^ help r currPrec) "" rs
+            | Alt (r1, r2) =>
+              (help r1 currPrec) ^ "|" ^ (help r2 currPrec)
         in
-          if currPrec < parentPrec then  "(" ^ s ^ ")" 
+          if currPrec < parentPrec then "(" ^ s ^ ")" 
           else s
         end
     in
