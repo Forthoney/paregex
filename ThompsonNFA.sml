@@ -1,4 +1,4 @@
-structure Thompson =
+structure ThompsonNFA : THOMPSON_NFA =
 struct
   type state_id = int
 
@@ -6,6 +6,8 @@ struct
     Epsilon of state_id
   | Literal of 'a * state_id
   | Split of state_id * state_id
+
+  type 'a transition_table = ('a transition) array
 
   val fetchAndAdd = MLton.Parallel.fetchAndAdd
 
@@ -73,7 +75,7 @@ struct
               )
             end
     in
-      loop (0, 1) re
+      (loop (0, 1) re; trans)
     end
 end
 

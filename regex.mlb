@@ -4,6 +4,8 @@ local
 	$(SML_LIB)/basis/fork-join.mlb
 in
 	Regex.sml
-	Thompson.sml
+	RegexParser.fun
+	ThompsonNFA.sig
+	ThompsonNFA.sml
 	Main.sml
 end
