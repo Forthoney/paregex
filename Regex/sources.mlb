@@ -1,5 +1,9 @@
 $(SML_LIB)/basis/basis.mlb
-Regex.sml
-ParserExtension.sig
-Barebones.sml
-RegexParser.fun
+local
+	Basis.sml
+in
+	ParserExtension.sig
+	ParserExtension.sml
+	RegexParser.fun
+	Regex.sml
+end

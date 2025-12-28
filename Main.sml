@@ -1,4 +1,4 @@
-structure Parser = RegexParserFn (Barebones)
+structure Parser = RegexParserFn (ParserExtension.Simple)
 
 val _ =
   case CommandLine.arguments () of

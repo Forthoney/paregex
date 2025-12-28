@@ -1,6 +1,6 @@
 functor RegexParserFn (Ext : REGEX_PARSER_EXTENSION) =
 struct
-  structure Re = Regex
+  structure Re = Basis
 
   fun scan getc strm =
     let
