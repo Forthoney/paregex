@@ -11,7 +11,7 @@ struct
     | prec (Concat _) = 2
     | prec (Alt _) = 1
 
-  fun toString (r : char t) : string =
+  fun toString r =
     let
       fun help r parentPrec =
         let

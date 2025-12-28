@@ -1,11 +1,13 @@
 local
-	$(SML_LIB)/basis/basis.mlb
 	$(SML_LIB)/basis/mlton.mlb
 	$(SML_LIB)/basis/fork-join.mlb
 in
-	Regex.sml
-	RegexParser.fun
+	Regex/sources.mlb
 	ThompsonNFA.sig
+ann
+	"allowVectorExpsAndPats true"
+in
 	ThompsonNFA.sml
 	Main.sml
+end
 end

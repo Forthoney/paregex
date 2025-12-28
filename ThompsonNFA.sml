@@ -60,20 +60,19 @@ struct
             ; Array.update (trans, start, Split (rStart, accept))
             )
           end
+        | Re.Concat #[] => Array.update (trans, start, Epsilon accept)
+        | Re.Concat #[re] => loop (start, accept) re
         | Re.Concat rs =>
-          case Vector.length rs of
-            0 => Array.update (trans, start, Epsilon accept)
-          | 1 => loop (start, accept) (Vector.sub (rs, 0))
-          | n =>
-            let
-              val innerStart = fetchAndAdd stateId (n + 1)
-              val innerAccept = innerStart + n
-            in
-              ( ForkJoin.parform (0, n) (fn i => loop (i + innerStart, i + innerStart + 1) (Vector.sub (rs, i)))
-              ; Array.update (trans, start, Epsilon innerStart)
-              ; Array.update (trans, innerAccept, Epsilon accept)
-              )
-            end
+          let
+            val n = Vector.length rs
+            val innerStart = fetchAndAdd stateId (n + 1)
+            val innerAccept = innerStart + n
+          in
+            ( ForkJoin.parform (0, n) (fn i => loop (i + innerStart, i + innerStart + 1) (Vector.sub (rs, i)))
+            ; Array.update (trans, start, Epsilon innerStart)
+            ; Array.update (trans, innerAccept, Epsilon accept)
+            )
+          end
     in
       (loop (0, 1) re; trans)
     end

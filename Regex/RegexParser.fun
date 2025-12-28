@@ -1,7 +1,7 @@
-functor RegexParserFn
-  (val escape: (char, 'strm) StringCvt.reader -> (char Regex.t, 'strm) StringCvt.reader) =
+functor RegexParserFn (Ext : REGEX_PARSER_EXTENSION) =
 struct
   structure Re = Regex
+
   fun scan getc strm =
     let
       exception Scan of string
@@ -19,7 +19,7 @@ struct
         | SOME (#"*", strm) => raise Scan "Unexpected character: *"
         | SOME (#")", strm) => raise Scan "Unexpected character: )"
         | SOME (#"\\", strm) =>
-          (case escape getc strm of
+          (case Ext.escape getc strm of
             NONE => raise Scan "Invalid escape sequence"
           | SOME v => v)
         | SOME (c, strm) => (Re.Literal c, strm)
@@ -27,9 +27,7 @@ struct
       and star strm =
         let val (atm, strm) = atom strm
         in
-          case getc strm of
-            SOME (#"*", strm) => (Re.Star atm, strm)
-          | _ => (atm, strm)
+          Option.getOpt (Ext.postfix atm getc strm, (atm, strm))
         end
 
       and concat strm =
