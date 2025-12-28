@@ -34,7 +34,6 @@ struct
       val stateId = ref 2
       val bogus = Epsilon 0
       val n = numStates re
-      val _ = print (Int.toString n ^ " states\n")
       val trans = Array.array (n, bogus)
 
       fun loop (start, accept) re =
