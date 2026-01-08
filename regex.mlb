@@ -1,6 +1,5 @@
 local
 	$(SML_LIB)/basis/mlton.mlb
-	$(SML_LIB)/basis/fork-join.mlb
 in
 	Regex/sources.mlb
 	ThompsonNFA.sig

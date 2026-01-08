@@ -1,3 +1,4 @@
+$(SML_LIB)/basis/fork-join.mlb
 $(SML_LIB)/basis/basis.mlb
 local
 	Basis.sml
